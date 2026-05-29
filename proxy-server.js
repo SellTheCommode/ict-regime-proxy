@@ -1,14 +1,9 @@
 // ICT RegimeAI -- Tradovate CORS Proxy Server
-// Deploy this on Render.com free tier
-// Your browser app calls this proxy, this proxy calls Tradovate
-
 const http = require('http');
 const https = require('https');
 const url = require('url');
-
 const PORT = process.env.PORT || 3000;
 
-// CORS headers -- allow your GitHub Pages URL
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
@@ -17,7 +12,6 @@ const CORS_HEADERS = {
 };
 
 const server = http.createServer((req, res) => {
-  // Handle preflight
   if (req.method === 'OPTIONS') {
     res.writeHead(204, CORS_HEADERS);
     res.end();
@@ -33,28 +27,23 @@ const server = http.createServer((req, res) => {
     return;
   }
 
-  // Proxy endpoint: POST /auth
-  // Body: { username, password, cid, secret, demo }
-  // Returns: Tradovate access token response
+  // POST /auth -- authenticate with Tradovate, return access token
   if (parsed.pathname === '/auth' && req.method === 'POST') {
     let body = '';
     req.on('data', chunk => body += chunk);
     req.on('end', () => {
       try {
         const { name, password, cid, sec, demo } = JSON.parse(body);
-        const host = demo
-          ? 'demo.tradovateapi.com'
-          : 'live.tradovateapi.com';
-
+        const host = demo ? 'demo.tradovateapi.com' : 'live.tradovateapi.com';
         const payload = JSON.stringify({
-          name: name,
-          password: password,
-          appId: 'ICT RegimeAI',
-          appVersion: '1.0',
+          name,
+          password,
+          appId: 'ICTRegimeAI',
+          appVersion: '3.0',
           cid: parseInt(cid),
-          sec: sec,
+          sec,
+          deviceId: 'ict-regime-001',
         });
-
         const options = {
           hostname: host,
           path: '/v1/auth/accesstokenrequest',
@@ -65,24 +54,18 @@ const server = http.createServer((req, res) => {
             'Accept': 'application/json',
           },
         };
-
         const proxyReq = https.request(options, proxyRes => {
           let data = '';
           proxyRes.on('data', chunk => data += chunk);
           proxyRes.on('end', () => {
-            res.writeHead(proxyRes.statusCode, {
-              ...CORS_HEADERS,
-              'Content-Type': 'application/json',
-            });
+            res.writeHead(proxyRes.statusCode, { ...CORS_HEADERS, 'Content-Type': 'application/json' });
             res.end(data);
           });
         });
-
         proxyReq.on('error', err => {
           res.writeHead(500, { ...CORS_HEADERS, 'Content-Type': 'application/json' });
           res.end(JSON.stringify({ error: err.message }));
         });
-
         proxyReq.write(payload);
         proxyReq.end();
       } catch (e) {
@@ -93,21 +76,28 @@ const server = http.createServer((req, res) => {
     return;
   }
 
-  // Proxy endpoint: GET /balance?demo=true
-  // Returns: Tradovate cash balance
+  // GET /balance?demo=true -- fetch account cash balance from Tradovate
   if (parsed.pathname === '/balance' && req.method === 'GET') {
-    const token = req.headers['authorization']?.replace('Bearer ', '');
+    const token = (req.headers['authorization'] || '').replace('Bearer ', '');
     const demo = parsed.query.demo !== 'false';
     const host = demo ? 'demo.tradovateapi.com' : 'live.tradovateapi.com';
+
+    if (!token) {
+      res.writeHead(401, { ...CORS_HEADERS, 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'No token provided' }));
+      return;
+    }
+
     const options = {
       hostname: host,
-      path: '/v1/cashBalance/getCashBalanceSnapshot',
+      path: '/v1/cashBalance/getcashbalancesnapshot',
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${token}`,
         'Accept': 'application/json',
       },
     };
+
     const proxyReq = https.request(options, proxyRes => {
       let data = '';
       proxyRes.on('data', chunk => data += chunk);
@@ -116,13 +106,16 @@ const server = http.createServer((req, res) => {
         res.end(data);
       });
     });
+
     proxyReq.on('error', err => {
       res.writeHead(500, { ...CORS_HEADERS, 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ error: err.message }));
     });
+
     proxyReq.end();
     return;
   }
+
   // 404
   res.writeHead(404, { ...CORS_HEADERS, 'Content-Type': 'application/json' });
   res.end(JSON.stringify({ error: 'Not found' }));
