@@ -41,18 +41,18 @@ const server = http.createServer((req, res) => {
     req.on('data', chunk => body += chunk);
     req.on('end', () => {
       try {
-        const { username, password, cid, secret, demo } = JSON.parse(body);
+        const { name, password, cid, sec, demo } = JSON.parse(body);
         const host = demo
           ? 'demo.tradovateapi.com'
           : 'live.tradovateapi.com';
 
         const payload = JSON.stringify({
-          name: username,
+          name: name,
           password: password,
           appId: 'ICT RegimeAI',
           appVersion: '1.0',
           cid: parseInt(cid),
-          sec: secret,
+          sec: sec,
         });
 
         const options = {
