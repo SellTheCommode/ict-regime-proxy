@@ -166,9 +166,9 @@ tvWs.on('message', (data, isBinary) => {
     }
   });
   
-  tvWs.on('close', (code, reason) => {
+tvWs.on('close', (code, reason) => {
     console.log(`WS: Tradovate closed ${code}`);
-    if (clientWs.readyState === WebSocket.OPEN) clientWs.close(code, reason);
+    if (clientWs.readyState === WebSocket.OPEN) clientWs.close(1000);
   });
 
   tvWs.on('error', err => {
@@ -176,9 +176,9 @@ tvWs.on('message', (data, isBinary) => {
     if (clientWs.readyState === WebSocket.OPEN) clientWs.close(1011, err.message);
   });
 
-  clientWs.on('close', (code, reason) => {
+ clientWs.on('close', (code, reason) => {
     console.log(`WS: browser closed ${code}`);
-    if (tvWs.readyState === WebSocket.OPEN) tvWs.close(code, reason);
+    if (tvWs.readyState === WebSocket.OPEN) tvWs.close(1000);
   });
 
   clientWs.on('error', err => {
