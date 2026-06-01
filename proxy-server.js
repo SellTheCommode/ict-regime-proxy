@@ -145,15 +145,27 @@ wss.on('connection', (clientWs, req) => {
   tvWs.on('open', () => console.log('WS: Tradovate connected'));
 
   // Tradovate -> Browser
-  tvWs.on('message', data => {
-    if (clientWs.readyState === WebSocket.OPEN) clientWs.send(data);
+tvWs.on('message', (data, isBinary) => {
+    if (clientWs.readyState === WebSocket.OPEN) {
+      if (isBinary) {
+        clientWs.send(data);
+      } else {
+        clientWs.send(data.toString());
+      }
+    }
   });
 
   // Browser -> Tradovate
-  clientWs.on('message', data => {
-    if (tvWs.readyState === WebSocket.OPEN) tvWs.send(data);
+ clientWs.on('message', (data, isBinary) => {
+    if (tvWs.readyState === WebSocket.OPEN) {
+      if (isBinary) {
+        tvWs.send(data);
+      } else {
+        tvWs.send(data.toString());
+      }
+    }
   });
-
+  
   tvWs.on('close', (code, reason) => {
     console.log(`WS: Tradovate closed ${code}`);
     if (clientWs.readyState === WebSocket.OPEN) clientWs.close(code, reason);
