@@ -1,15 +1,13 @@
 {
   "name": "ict-regime-proxy",
-  "version": "1.0.0",
-  "description": "CORS proxy for Tradovate API",
+  "version": "2.0.0",
+  "description": "CORS proxy + WebSocket proxy for Tradovate API",
   "main": "proxy-server.js",
   "scripts": {
     "start": "node proxy-server.js"
   },
   "dependencies": {
-    "express": "^4.18.2",
-    "cors": "^2.8.5",
-    "node-fetch": "^2.6.9"
+    "ws": "^8.16.0"
   },
   "engines": {
     "node": ">=18.0.0"
